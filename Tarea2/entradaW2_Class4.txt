@@ -1,0 +1,14 @@
+# Tamaño de la memoria
+4096
+# Cantidad de segmentos o particiones
+6
+# Tamano de las particiones
+800 700 950 600 125 921
+# Algoritmo: 1) First fit, 2) Best-Fit, 3) Worst-Fit
+3
+# proceso 3 solicita 200
+3 200
+# proceso 56 solicita 500
+56 500
+# proceso 112 solicita 921
+112 921

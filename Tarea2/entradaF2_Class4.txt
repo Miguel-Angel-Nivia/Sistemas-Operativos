@@ -1,0 +1,14 @@
+# Tamaño de la memoria
+1024
+# Cantidad de segmentos o particiones
+4
+# Tamano de las particiones
+256 256 256 256
+# Algoritmo: 1) First fit, 2) Best-Fit, 3) Worst-Fit
+2
+# proceso 18 solicita 111
+18 111
+# proceso 23 solicita 200
+23 200
+# proceso 92 solicita 256
+92 256
