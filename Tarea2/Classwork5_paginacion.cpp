@@ -1,5 +1,3 @@
-// Simulador de Paginacion
-
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -8,15 +6,15 @@
 // Estructura para representar una pagina de memoria
 struct Pagina {
   int id;
+  int posicion;
   bool libre;
 };
 
 // Estructura para representar un proceso
-
 struct Proceso {
   int id;
   int tamano;
-  std::vector<int> paginasAsignadas;
+  int paginaAsignada;
 };
 
 class SimuladorPaginacion {
@@ -34,6 +32,7 @@ public:
     memoriaPaginada.resize(numPaginas);
     for (int i = 0; i < numPaginas; i++) {
       memoriaPaginada[i].id = i;
+      memoriaPaginada[i].posicion = i + 1;
       memoriaPaginada[i].libre = true;
     }
   }
@@ -41,28 +40,81 @@ public:
   // Funcion para asignar espacio a un proceso
   bool asignarMemoria(int procesoID, int tamano) {
 
-    int numPaginasNecesarias = (tamano + tamanoPagina - 1) / tamanoPagina;
-    std::vector<int> paginasAsignadas;
+    int bandera = 0;
+    int lugar_proceso = 0;
 
-    for (int i = 0; i < memoriaPaginada.size(); i++) {
-      if (memoriaPaginada[i].libre && numPaginasNecesarias > 0) {
-        paginasAsignadas.push_back(i);
-        numPaginasNecesarias--;
+    for (int i = 0; i < procesos.size(); i++) {
+      if (procesoID == procesos[i].id) {
+        bandera = 1;
+        lugar_proceso = i;
       }
     }
 
-    if (numPaginasNecesarias == 0) {
-      Proceso nuevoProceso;
-      nuevoProceso.id = procesoID;
-      nuevoProceso.tamano = tamano;
-      nuevoProceso.paginasAsignadas = paginasAsignadas;
-      procesos.push_back(nuevoProceso);
-      for (int i = 0; i < paginasAsignadas.size(); i++) {
-        memoriaPaginada[paginasAsignadas[i]].libre = false;
+    if (bandera == 1) {
+
+      for (int i = 0; i < memoriaPaginada.size(); i++) {
+        if (memoriaPaginada[i].posicion >
+            memoriaPaginada[procesos[lugar_proceso].paginaAsignada].posicion) {
+
+          memoriaPaginada[i].posicion = memoriaPaginada[i].posicion - 1;
+        }
       }
+
+      memoriaPaginada[procesos[lugar_proceso].paginaAsignada].posicion =
+          memoriaPaginada.size();
     } else {
-      return false;
-    } // No se pudo asignar memoria
+      Proceso nuevoProceso;
+
+      int contador = 0;
+
+      for (int i = 0; i < memoriaPaginada.size(); i++) {
+        if (memoriaPaginada[i].libre) {
+          contador++;
+        }
+      }
+
+      if (contador > 0) {
+
+        int bandera = 0;
+
+        for (int i = 0; i < memoriaPaginada.size(); i++) {
+          if (memoriaPaginada[i].libre && tamanoPagina >= tamano &&
+              bandera == 0) {
+            memoriaPaginada[i].libre = false;
+            bandera = 1;
+            nuevoProceso.id = procesoID;
+            nuevoProceso.tamano = tamano;
+            nuevoProceso.paginaAsignada = i;
+            procesos.push_back(nuevoProceso);
+          }
+        }
+      } else {
+
+        if (tamanoPagina >= tamano) {
+
+          for (int i = 0; i < memoriaPaginada.size(); i++) {
+            memoriaPaginada[i].posicion = memoriaPaginada[i].posicion - 1;
+          }
+
+          for (int i = 0; i < procesos.size(); i++) {
+            if (memoriaPaginada[procesos[i].paginaAsignada].posicion == 0) {
+              procesos.erase(procesos.begin() + i);
+            }
+          }
+
+          for (int i = 0; i < memoriaPaginada.size(); i++) {
+            if (memoriaPaginada[i].posicion == 0) {
+              memoriaPaginada[i].posicion = memoriaPaginada.size();
+              nuevoProceso.id = procesoID;
+              nuevoProceso.tamano = tamano;
+              nuevoProceso.paginaAsignada = i;
+              procesos.push_back(nuevoProceso);
+            }
+          }
+        }
+      }
+    }
+    return 0;
   }
 
   // Funcion para liberar espacio ocupado por un proceso
@@ -70,9 +122,18 @@ public:
   void liberarMemoria(int procesoID) {
     for (int i = 0; i < procesos.size(); i++) {
       if (procesos[i].id == procesoID) {
-        for (int j = 0; j < procesos[i].paginasAsignadas.size(); j++) {
-          memoriaPaginada[procesos[i].paginasAsignadas[j]].libre = true;
+        memoriaPaginada[procesos[i].paginaAsignada].libre = true;
+
+        for (int j = 0; j < memoriaPaginada.size(); j++) {
+          if (memoriaPaginada[j].posicion >
+              memoriaPaginada[procesos[i].paginaAsignada].posicion) {
+
+            memoriaPaginada[j].posicion = memoriaPaginada[j].posicion - 1;
+          }
         }
+
+        memoriaPaginada[procesos[i].paginaAsignada].posicion =
+            memoriaPaginada.size();
         procesos.erase(procesos.begin() + i);
       }
     }
@@ -83,16 +144,18 @@ public:
 
     std::cout << "Estado de la memoria paginada:" << std::endl;
     for (int i = 0; i < memoriaPaginada.size(); i++) {
+      std::cout << "Memoria ID: " << memoriaPaginada[i].id
+                << " Estado: " << memoriaPaginada[i].libre
+                << " posicion: " << memoriaPaginada[i].posicion << std::endl;
     }
     std::cout << std::endl;
 
     std::cout << "Procesos en memoria:" << std::endl;
-    for (const Proceso &p : procesos) {
-      std::cout << "Proceso ID" << p.id << ", Tamaño:  " << p.tamano
-                << ", Paginas: ";
-      for (int pagina : p.paginasAsignadas) {
-        std::cout << pagina << " ";
-      }
+    for (int i = 0; i < procesos.size(); i++) {
+      std::cout << "Proceso ID: " << procesos[i].id
+                << ", Tamaño:  " << procesos[i].tamano
+                << ", Pagina: " << procesos[i].paginaAsignada << " "
+                << std::endl;
       std::cout << std::endl;
     }
   }
@@ -104,12 +167,22 @@ int main() {
   SimuladorPaginacion simulador(tamanoMemoria, tamanoPagina);
 
   // Asignar espacio a procesos
-  simulador.asignarMemoria(1, 30);
-  simulador.asignarMemoria(2, 40);
+  simulador.asignarMemoria(1, 20);
+  simulador.asignarMemoria(2, 20);
   simulador.asignarMemoria(3, 15);
+  simulador.asignarMemoria(4, 21);
+
+  simulador.imprimirEstadoMemoria();
+
+  simulador.asignarMemoria(5, 9);
+  simulador.asignarMemoria(5, 9);
+  simulador.asignarMemoria(6, 9);
+  simulador.asignarMemoria(7, 9);
+
+  simulador.imprimirEstadoMemoria();
 
   // Liberar espacio de procesos
-  simulador.liberarMemoria(1);
+  simulador.liberarMemoria(7);
 
   // Imprimir estado de la memoria
   simulador.imprimirEstadoMemoria();
